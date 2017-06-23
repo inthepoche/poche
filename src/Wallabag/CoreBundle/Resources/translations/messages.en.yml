@@ -33,6 +33,7 @@ menu:
         back_to_unread: 'Back to unread articles'
         users_management: 'Users management'
         site_credentials: 'Site credentials'
+        groups_management: 'Groups management'
     top:
         add_new_entry: 'Add a new entry'
         search: 'Search'
@@ -223,6 +224,7 @@ entry:
             delete_public_link: 'delete public link'
             export: 'Export'
             print: 'Print'
+            groups: Groups
             problem:
                 label: 'Problems?'
                 description: 'Does this article appear wrong?'
@@ -496,6 +498,50 @@ developer:
             paragraph_8: 'If you want to see all the API endpoints, you can have a look <a href="%link%">to our API documentation</a>.'
         back: 'Back'
 
+group:
+    page_title: Groups management
+    new_group: Create a new group
+    edit_group: Edit an existing group
+    description: "Here you can manage all groups (create, edit and delete)"
+    list:
+        actions: Actions
+        edit_action: Edit
+        yes: Yes
+        no: No
+        create_new_one: Create a new group
+    form:
+        name_label: 'Name'
+        roles_label: 'Roles'
+        save: Save
+        delete: Delete
+        delete_confirm: Are you sure?
+        back_to_list: Back to list
+        role_label: Default roles
+        access_label: Access
+        password_label: Password (if applicable)
+
+    roles:
+        readonly: Read only
+        write: Write access
+        manage_entries: Managing articles
+        manage_users: Managing members
+        admin: Administrator
+    access:
+        open: Open
+        request: On request
+        password: With password
+        invitation: Upon invitation
+        hidden: Upon invitation and private
+    tab_menu:
+        public: Public groups
+        own: My groups
+    manage:
+        label: Manage this group
+    entries:
+        label: Entries shared with this group
+    leave:
+        label: Leave
+
 user:
     page_title: Users management
     new_user: Create a new user
@@ -601,3 +647,8 @@ flashes:
             added: 'Site credential for "%host%" added'
             updated: 'Site credential for "%host%" updated'
             deleted: 'Site credential for "%host%" deleted'
+    group:
+        notice:
+            added: 'Group "%name%" added'
+            updated: 'Group "%name%" updated'
+            deleted: 'Group "%name%" deleted'

@@ -7,6 +7,11 @@ wallabag_import:
     type: annotation
     prefix: /import
 
+wallabag_group:
+    resource: "@WallabagGroupBundle/Controller/"
+    type: annotation
+    prefix: /groups
+
 wallabag_user:
     resource: "@WallabagUserBundle/Controller/"
     type: annotation

@@ -1,6 +1,6 @@
 {% extends "WallabagCoreBundle::layout.html.twig" %}
 
-{% block title %}{{ 'user.page_title'|trans }}{% endblock %}
+{% block title %}{{ 'group.page_title'|trans }}{% endblock %}
 
 {% block content %}
 
@@ -9,7 +9,7 @@
             <div class="card-panel">
                 <div class="row">
                     <div class="input-field col s12">
-                        <h4>{{ 'user.new_user'|trans }}</h4>
+                        <h4>{{ 'group.new_group'|trans }}</h4>
 
                         <div id="set6" class="col s12">
                             {{ form_start(form) }}
@@ -17,47 +17,40 @@
 
                                 <div class="row">
                                     <div class="input-field col s12">
-                                        {{ form_label(form.username) }}
-                                        {{ form_errors(form.username) }}
-                                        {{ form_widget(form.username) }}
+                                        {{ form_label(form.name) }}
+                                        {{ form_errors(form.name) }}
+                                        {{ form_widget(form.name) }}
                                     </div>
                                 </div>
 
                                 <div class="row">
                                     <div class="input-field col s12">
-                                        {{ form_label(form.plainPassword.first) }}
-                                        {{ form_errors(form.plainPassword.first) }}
-                                        {{ form_widget(form.plainPassword.first) }}
+                                        {{ form_label(form.defaultRole) }}
+                                        {{ form_errors(form.defaultRole) }}
+                                        {{ form_widget(form.defaultRole) }}
                                     </div>
                                 </div>
 
                                 <div class="row">
                                     <div class="input-field col s12">
-                                        {{ form_label(form.plainPassword.second) }}
-                                        {{ form_errors(form.plainPassword.second) }}
-                                        {{ form_widget(form.plainPassword.second) }}
+                                        {{ form_label(form.acceptSystem) }}
+                                        {{ form_errors(form.acceptSystem) }}
+                                        {{ form_widget(form.acceptSystem) }}
                                     </div>
                                 </div>
 
                                 <div class="row">
                                     <div class="input-field col s12">
-                                        {{ form_label(form.email) }}
-                                        {{ form_errors(form.email) }}
-                                        {{ form_widget(form.email) }}
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="input-field col s12">
-                                        {{ form_errors(form.groups) }}
-                                        {{ form_widget(form.groups) }}
+                                        {{ form_label(form.plainPassword) }}
+                                        {{ form_errors(form.plainPassword) }}
+                                        {{ form_widget(form.plainPassword) }}
                                     </div>
                                 </div>
 
                                 {{ form_widget(form.save, {'attr': {'class': 'btn waves-effect waves-light'}}) }}
                                 {{ form_rest(form) }}
                             </form>
-                            <p><a class="waves-effect waves-light btn blue-grey" href="{{ path('user_index') }}">{{ 'user.form.back_to_list'|trans }}</a></p>
+                            <p><a class="waves-effect waves-light btn blue-grey" href="{{ path('group_index') }}">{{ 'group.form.back_to_list'|trans }}</a></p>
                         </div>
                     </div>
                 </div>

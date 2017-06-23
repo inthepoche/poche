@@ -33,6 +33,23 @@ menu:
         back_to_unread: "Retour aux articles non lus"
         users_management: "Gestion des utilisateurs"
         site_credentials: 'Accès aux sites'
+        unread: 'Non lus'
+        starred: 'Favoris'
+        archive: 'Lus'
+        all_articles: 'Tous les articles'
+        config: 'Configuration'
+        tags: 'Tags'
+        internal_settings: 'Configuration interne'
+        import: 'Importer'
+        howto: 'Aide'
+        developer: 'Développeur'
+        logout: 'Déconnexion'
+        about: 'À propos'
+        search: 'Recherche'
+        save_link: 'Sauvegarder un nouvel article'
+        back_to_unread: 'Retour aux articles non lus'
+        users_management: 'Gestion des utilisateurs'
+        groups_management: 'Gestion des groupes'
     top:
         add_new_entry: "Sauvegarder un nouvel article"
         search: "Rechercher"
@@ -223,6 +240,7 @@ entry:
             delete_public_link: "Supprimer le lien public"
             export: "Exporter"
             print: "Imprimer"
+            groups: Groupes
             problem:
                 label: "Un problème ?"
                 description: "Est-ce que cet article s’affiche mal ?"
@@ -496,6 +514,69 @@ developer:
             paragraph_8: "Si vous voulez toutes les méthodes de l’API, jetez un oeil <a href=\"%link%\">à la documentation de l’API</a>."
         back: "Retour"
 
+group:
+    page_title: Gestion des groupes
+    new_group: Créer un nouveau groupe
+    edit_group: Éditer le groupe « %group% »
+    description: Ici vous pouvez gérer vos groupes (création, mise à jour et suppression)
+    list:
+        actions: Actions
+        edit_action: Éditer
+        yes: Oui
+        no: Non
+        create_new_one: Créer un nouveau groupe
+    form:
+        name_label: 'Nom'
+        roles_label: 'Rôles'
+        save: Sauvegarder
+        delete: Supprimer
+        delete_confirm: Êtes-vous sur ?
+        back_to_list: Revenir à la liste
+        role_label: Rôles par défaut
+        access_label: Accès
+        password_label: Mot de passe (si nécessaire)
+    roles:
+        readonly: Lecture seule
+        write: Écriture
+        manage_entries: Gestion des articles
+        manage_users: Gestion des utilisateurs
+        admin: Administrateur
+    access:
+        open: Ouvert
+        request: Sur demande
+        password: Par mot de passe
+        invitation: Sur invitation
+        hidden: Sur invitation et privée
+    tab_menu:
+        public: Groupes publics
+        own: Mes groupes
+    requests:
+        list: Liste des requêtes
+        sent: Requête envoyée
+        username: Utilisateur
+        action: Action
+    manage:
+        label: Gérer le groupe
+        title: Gérer le groupe
+    entries:
+        label: Liste des articles partagés avec ce groupe
+    leave:
+        label: Sortir de ce groupe
+    user:
+        inGroup: "{0}Il n'y a personne dans ce groupe|{1}Vous êtes tout seul dans ce groupe|]1,Inf[Vous êtes %count% utilisateurs dans ce groupe"
+        notInGroup: "{0}Il n'y a personne dans ce groupe|{1}Il y a un seul utilisateur dans ce groupe|]1,Inf[%count% utilisateurs dans ce groupe"
+    members:
+        empty: Le groupe est vide
+        name: Nom d'utilisateur
+        role: Rôle
+        action: Action
+        edit: Modifier les droits de l'utilisateur
+        exclude: Exclure l'utilisateur
+    edit_user:
+        title: Édition des droits de l'utilisateur
+        role: Rôle
+        cancel: Annuler
+
 user:
     page_title: "Gestion des utilisateurs"
     new_user: "Créer un nouvel utilisateur"
@@ -601,3 +682,12 @@ flashes:
             added: 'Accès au site "%host%" ajouté'
             updated: 'Accès au site "%host%" mis à jour'
             deleted: 'Accès au site "%host%" supprimé'
+
+            added: "Utilisateur \"%username%\" ajouté"
+            updated: "Utilisateur \"%username%\" mis à jour"
+            deleted: "Utilisateur \"%username%\" supprimé"
+    group:
+        notice:
+            added: "Groupe \"%name%\" ajouté"
+            updated: "Groupe \"%name%\" mis à jour"
+            deleted: "Groupe \"%name%\" supprimé"
