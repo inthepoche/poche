@@ -6,7 +6,9 @@ use Pagerfanta\Adapter\DoctrineORMAdapter;
 use Pagerfanta\Exception\OutOfRangeCurrentPageException;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Wallabag\CoreBundle\Entity\Entry;
 use Wallabag\CoreBundle\Form\Type\EntryFilterType;
@@ -603,5 +605,37 @@ class EntryController extends Controller
     public function showUntaggedEntriesAction(Request $request, $page)
     {
         return $this->showEntries('untagged', $request, $page);
+    }
+
+    /**
+     * Set the progress of an entry.
+     *
+     * @param Entry $entry
+     * @param int   $progress
+     *
+     * @Route("/progress/{entry}/{progress}", name="set_progress")
+     *
+     * @return JsonResponse
+     */
+    public function setEntriesProgressAction(Entry $entry, $progress = 0)
+    {
+        $this->checkUserAction($entry);
+        $response = new JsonResponse();
+
+        $progress = (int) $progress;
+        if ($progress >= 0 && $progress <= 100) {
+            $em = $this->getDoctrine()->getManager();
+
+            $entry->setProgress($progress);
+
+            $this->get('logger')->info('Set progress to ' . $progress);
+
+            $em->persist($entry);
+            $em->flush();
+
+            $response->setStatusCode(Response::HTTP_OK);
+        }
+
+        return $response;
     }
 }
