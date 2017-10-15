@@ -38,6 +38,7 @@ menu:
         search: 'Cercar'
         filter_entries: 'Filtrar los articles'
         export: 'Exportar'
+        # notifications: 'Notifications'
     search_form:
         input_label: 'Picatz vòstre mot-clau a cercar aquí'
 
@@ -250,6 +251,17 @@ entry:
     confirm:
         delete: "Sètz segur de voler suprimir aqueste article ?"
         delete_tag: "Sètz segur de voler levar aquesta etiqueta de l'article ?"
+
+# notifications:
+#     sidebar:
+#         view_more: 'View more'
+#     list:
+#         page_title: 'Notifications'
+#         mark_all_as_read: 'Mark all as read'
+#         none: "No notifications yet :'("
+#     release:
+#         title: "wallabag has been updated to version %version%"
+#         details: "View update's details"
 
 about:
     page_title: 'A prepaus'
