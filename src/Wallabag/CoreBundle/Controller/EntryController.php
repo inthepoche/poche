@@ -15,6 +15,7 @@ use Wallabag\CoreBundle\Event\EntryDeletedEvent;
 use Wallabag\CoreBundle\Event\EntrySavedEvent;
 use Wallabag\CoreBundle\Form\Type\EditEntryType;
 use Wallabag\CoreBundle\Form\Type\EntryFilterType;
+use Wallabag\CoreBundle\Form\Type\EntrySortType;
 use Wallabag\CoreBundle\Form\Type\NewEntryType;
 use Wallabag\CoreBundle\Form\Type\SearchEntryType;
 
@@ -531,31 +532,44 @@ class EntryController extends Controller
         $repository = $this->get('wallabag_core.entry_repository');
         $searchTerm = (isset($request->get('search_entry')['term']) ? $request->get('search_entry')['term'] : '');
         $currentRoute = (null !== $request->query->get('currentRoute') ? $request->query->get('currentRoute') : '');
+        $direction = 'asc';
+        $sortBy = null;
+
+        if (null !== ($request->query->get('entry_sort'))) {
+            $direction = (null !== $request->query->get('entry_sort')['sortOrder'] ? $request->query->get('entry_sort')['sortOrder'] : 'asc');
+
+            // defined as null by default because each repository method have the right field as default value too
+            // like `getBuilderForStarredByUser` will have `starredAt` sort by default
+            if (\in_array($request->get('entry_sort')['sortType'], ['id', 'title', 'createdAt', 'updatedAt', 'starredAt', 'archivedAt'], true)) {
+                $sortBy = $request->get('entry_sort')['sortType'];
+            }
+        }
 
         switch ($type) {
             case 'search':
                 $qb = $repository->getBuilderForSearchByUser($this->getUser()->getId(), $searchTerm, $currentRoute);
                 break;
             case 'untagged':
-                $qb = $repository->getBuilderForUntaggedByUser($this->getUser()->getId());
+                $qb = $repository->getBuilderForUntaggedByUser($this->getUser()->getId(), $sortBy, $direction);
                 break;
             case 'starred':
-                $qb = $repository->getBuilderForStarredByUser($this->getUser()->getId());
+                $qb = $repository->getBuilderForStarredByUser($this->getUser()->getId(), $sortBy, $direction);
                 break;
             case 'archive':
-                $qb = $repository->getBuilderForArchiveByUser($this->getUser()->getId());
+                $qb = $repository->getBuilderForArchiveByUser($this->getUser()->getId(), $sortBy, $direction);
                 break;
             case 'unread':
-                $qb = $repository->getBuilderForUnreadByUser($this->getUser()->getId());
+                $qb = $repository->getBuilderForUnreadByUser($this->getUser()->getId(), $sortBy, $direction);
                 break;
             case 'all':
-                $qb = $repository->getBuilderForAllByUser($this->getUser()->getId());
+                $qb = $repository->getBuilderForAllByUser($this->getUser()->getId(), $sortBy, $direction);
                 break;
             default:
                 throw new \InvalidArgumentException(sprintf('Type "%s" is not implemented.', $type));
         }
 
         $form = $this->createForm(EntryFilterType::class);
+        $sortForm = $this->createForm(EntrySortType::class);
 
         if ($request->query->has($form->getName())) {
             // manually bind values from the request
@@ -563,6 +577,11 @@ class EntryController extends Controller
 
             // build the query from the given form object
             $this->get('lexik_form_filter.query_builder_updater')->addFilterConditions($form, $qb);
+        }
+
+        if ($request->query->has($sortForm->getName())) {
+            // manually bind values from the request
+            $sortForm->submit($request->query->get($sortForm->getName()));
         }
 
         $pagerAdapter = new DoctrineORMAdapter($qb->getQuery(), true, false);
@@ -583,6 +602,7 @@ class EntryController extends Controller
         return $this->render(
             'WallabagCoreBundle:Entry:entries.html.twig', [
                 'form' => $form->createView(),
+                'sortForm' => $sortForm->createView(),
                 'entries' => $entries,
                 'currentPage' => $page,
                 'searchTerm' => $searchTerm,

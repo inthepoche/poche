@@ -16,28 +16,36 @@ class EntryRepository extends EntityRepository
     /**
      * Retrieves all entries for a user.
      *
-     * @param int $userId
+     * @param int    $userId
+     * @param string $sortBy    Field to sort
+     * @param string $direction Direction of the order
      *
      * @return QueryBuilder
      */
-    public function getBuilderForAllByUser($userId)
+    public function getBuilderForAllByUser($userId, $sortBy = 'id', $direction = 'DESC')
     {
+        $sortBy = $sortBy ?: 'id';
+
         return $this
-            ->getSortedQueryBuilderByUser($userId)
+            ->getSortedQueryBuilderByUser($userId, $sortBy, $direction)
         ;
     }
 
     /**
      * Retrieves unread entries for a user.
      *
-     * @param int $userId
+     * @param int    $userId
+     * @param string $sortBy    Field to sort
+     * @param string $direction Direction of the order
      *
      * @return QueryBuilder
      */
-    public function getBuilderForUnreadByUser($userId)
+    public function getBuilderForUnreadByUser($userId, $sortBy = 'id', $direction = 'DESC')
     {
+        $sortBy = $sortBy ?: 'id';
+
         return $this
-            ->getSortedQueryBuilderByUser($userId)
+            ->getSortedQueryBuilderByUser($userId, $sortBy, $direction)
             ->andWhere('e.isArchived = false')
         ;
     }
@@ -45,14 +53,18 @@ class EntryRepository extends EntityRepository
     /**
      * Retrieves read entries for a user.
      *
-     * @param int $userId
+     * @param int    $userId
+     * @param string $sortBy    Field to sort
+     * @param string $direction Direction of the order
      *
      * @return QueryBuilder
      */
-    public function getBuilderForArchiveByUser($userId)
+    public function getBuilderForArchiveByUser($userId, $sortBy = 'archivedAt', $direction = 'DESC')
     {
+        $sortBy = $sortBy ?: 'archivedAt';
+
         return $this
-            ->getSortedQueryBuilderByUser($userId, 'archivedAt', 'desc')
+            ->getSortedQueryBuilderByUser($userId, $sortBy, $direction)
             ->andWhere('e.isArchived = true')
         ;
     }
@@ -60,14 +72,18 @@ class EntryRepository extends EntityRepository
     /**
      * Retrieves starred entries for a user.
      *
-     * @param int $userId
+     * @param int    $userId
+     * @param string $sortBy    Field to sort
+     * @param string $direction Direction of the order
      *
      * @return QueryBuilder
      */
-    public function getBuilderForStarredByUser($userId)
+    public function getBuilderForStarredByUser($userId, $sortBy = 'starredAt', $direction = 'DESC')
     {
+        $sortBy = $sortBy ?: 'starredAt';
+
         return $this
-            ->getSortedQueryBuilderByUser($userId, 'starredAt', 'desc')
+            ->getSortedQueryBuilderByUser($userId, $sortBy, $direction)
             ->andWhere('e.isStarred = true')
         ;
     }
@@ -106,13 +122,17 @@ class EntryRepository extends EntityRepository
     /**
      * Retrieve a sorted list of untagged entries for a user.
      *
-     * @param int $userId
+     * @param int    $userId
+     * @param string $sortBy    Field to sort
+     * @param string $direction Direction of the order
      *
      * @return QueryBuilder
      */
-    public function getBuilderForUntaggedByUser($userId)
+    public function getBuilderForUntaggedByUser($userId, $sortBy = 'starredAt', $direction = 'DESC')
     {
-        return $this->sortQueryBuilder($this->getRawBuilderForUntaggedByUser($userId));
+        $sortBy = $sortBy ?: 'id';
+
+        return $this->sortQueryBuilder($this->getRawBuilderForUntaggedByUser($userId), $sortBy, $direction);
     }
 
     /**
@@ -571,6 +591,11 @@ class EntryRepository extends EntityRepository
      */
     private function sortQueryBuilder(QueryBuilder $qb, $sortBy = 'createdAt', $direction = 'desc')
     {
-        return $qb->orderBy(sprintf('e.%s', $sortBy), $direction);
+        // in case one of these isn't defined, don't apply the orderBy
+        if (!$sortBy || !$direction) {
+            return $qb;
+        }
+
+        return $qb->orderBy(sprintf('e.%s', $sortBy), strtoupper($direction));
     }
 }
