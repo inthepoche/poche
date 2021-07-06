@@ -79,7 +79,7 @@ class EntryControllerTest extends WallabagCoreTestCase
     public function testGetNew()
     {
         $this->logInAs('admin');
-        $this->useTheme('baggy');
+        $this->useTheme('material');
         $client = $this->getClient();
 
         $crawler = $client->request('GET', '/new');
@@ -1387,7 +1387,7 @@ class EntryControllerTest extends WallabagCoreTestCase
     {
         return [
             'ru' => [
-                'https://www.vtimes.io/2020/12/14/ubiistvo-kotorogo-ne-bilo-a1981',
+                'https://www.gazeta.ru/social/2021/07/06/13704470.shtml',
                 'ru',
             ],
             'fr' => [
