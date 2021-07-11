@@ -2,16 +2,22 @@
 
 namespace Wallabag\AnnotationBundle\Controller;
 
-use FOS\RestBundle\Controller\FOSRestController;
+use FOS\RestBundle\Controller\AbstractFOSRestController;
+use FOS\RestBundle\Controller\Annotations\Delete;
+use FOS\RestBundle\Controller\Annotations\Get;
+use FOS\RestBundle\Controller\Annotations\Post;
+use FOS\RestBundle\Controller\Annotations\Put;
+use JMS\Serializer\SerializerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Wallabag\AnnotationBundle\Entity\Annotation;
 use Wallabag\AnnotationBundle\Form\EditAnnotationType;
 use Wallabag\AnnotationBundle\Form\NewAnnotationType;
+use Wallabag\AnnotationBundle\Repository\AnnotationRepository;
 use Wallabag\CoreBundle\Entity\Entry;
 
-class WallabagAnnotationController extends FOSRestController
+class WallabagAnnotationController extends AbstractFOSRestController
 {
     /**
      * Retrieve annotations for an entry.
@@ -19,12 +25,12 @@ class WallabagAnnotationController extends FOSRestController
      * @see Wallabag\ApiBundle\Controller\WallabagRestController
      *
      * @return JsonResponse
+     *
+     * @Get("/annotations/{entry}.{_format}", name="annotations_get_annotations")
      */
     public function getAnnotationsAction(Entry $entry)
     {
-        $annotationRows = $this
-            ->getDoctrine()
-            ->getRepository('WallabagAnnotationBundle:Annotation')
+        $annotationRows = $this->get('wallabag_core.annotation_repository')
             ->findAnnotationsByPageId($entry->getId(), $this->getUser()->getId());
         $total = \count($annotationRows);
         $annotations = ['total' => $total, 'rows' => $annotationRows];
@@ -40,6 +46,8 @@ class WallabagAnnotationController extends FOSRestController
      * @return JsonResponse
      *
      * @see Wallabag\ApiBundle\Controller\WallabagRestController
+     *
+     * @Post("/annotations/{entry}.{_format}", name="annotations_post_annotation")
      */
     public function postAnnotationAction(Request $request, Entry $entry)
     {
@@ -75,6 +83,8 @@ class WallabagAnnotationController extends FOSRestController
      * @ParamConverter("annotation", class="WallabagAnnotationBundle:Annotation")
      *
      * @return JsonResponse
+     *
+     * @Put("/annotations/{annotation}.{_format}", name="annotations_put_annotation")
      */
     public function putAnnotationAction(Annotation $annotation, Request $request)
     {
@@ -107,6 +117,8 @@ class WallabagAnnotationController extends FOSRestController
      * @ParamConverter("annotation", class="WallabagAnnotationBundle:Annotation")
      *
      * @return JsonResponse
+     *
+     * @Delete("/annotations/{annotation}.{_format}", name="annotations_delete_annotation")
      */
     public function deleteAnnotationAction(Annotation $annotation)
     {
@@ -117,5 +129,16 @@ class WallabagAnnotationController extends FOSRestController
         $json = $this->get('jms_serializer')->serialize($annotation, 'json');
 
         return (new JsonResponse())->setJson($json);
+    }
+
+    public static function getSubscribedServices()
+    {
+        return array_merge(
+            parent::getSubscribedServices(),
+            [
+                'jms_serializer' => SerializerInterface::class,
+                'wallabag_core.annotation_repository' => AnnotationRepository::class,
+            ]
+        );
     }
 }

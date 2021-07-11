@@ -1,5 +1,4 @@
 imports:
-    - { resource: rabbit.yml }
     - { resource: redis.yml }
 
 services:
@@ -22,19 +21,6 @@ services:
         tags:
             -  { name: wallabag_import.import, alias: pocket }
 
-    wallabag_import.wallabag_v1.import:
-        class: Wallabag\ImportBundle\Import\WallabagV1Import
-        arguments:
-            - "@doctrine.orm.entity_manager"
-            - "@wallabag_core.content_proxy"
-            - "@wallabag_core.tags_assigner"
-            - "@event_dispatcher"
-            - "%wallabag_core.fetching_error_message_title%"
-            - "%wallabag_core.fetching_error_message%"
-        calls:
-            - [ setLogger, [ "@logger" ]]
-        tags:
-            -  { name: wallabag_import.import, alias: wallabag_v1 }
 
     wallabag_import.wallabag_v2.import:
         class: Wallabag\ImportBundle\Import\WallabagV2Import
@@ -118,11 +104,3 @@ services:
             - [ setLogger, [ "@logger" ]]
         tags:
             -  { name: wallabag_import.import, alias: chrome }
-
-    wallabag_import.command.import:
-        class: Wallabag\ImportBundle\Command\ImportCommand
-        tags: ['console.command']
-
-    wallabag_import.command.redis_worker:
-        class: Wallabag\ImportBundle\Command\RedisWorkerCommand
-        tags: ['console.command']

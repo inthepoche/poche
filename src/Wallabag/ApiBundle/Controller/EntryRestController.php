@@ -2,6 +2,10 @@
 
 namespace Wallabag\ApiBundle\Controller;
 
+use FOS\RestBundle\Controller\Annotations\Delete;
+use FOS\RestBundle\Controller\Annotations\Get;
+use FOS\RestBundle\Controller\Annotations\Patch;
+use FOS\RestBundle\Controller\Annotations\Post;
 use Hateoas\Configuration\Route;
 use Hateoas\Representation\Factory\PagerfantaFactory;
 use Nelmio\ApiDocBundle\Annotation\ApiDoc;
@@ -14,10 +18,25 @@ use Wallabag\CoreBundle\Entity\Entry;
 use Wallabag\CoreBundle\Entity\Tag;
 use Wallabag\CoreBundle\Event\EntryDeletedEvent;
 use Wallabag\CoreBundle\Event\EntrySavedEvent;
+use Wallabag\CoreBundle\Helper\ContentProxy;
+use Wallabag\CoreBundle\Helper\EntriesExport;
+use Wallabag\CoreBundle\Helper\TagsAssigner;
 use Wallabag\CoreBundle\Helper\UrlHasher;
+use Wallabag\CoreBundle\Repository\EntryRepository;
 
-class EntryRestController extends WallabagRestController
+class EntryRestController extends AbstractWallabagRestController
 {
+    private $entryRepository;
+    private $fetchingErrorMessage;
+    private $apiLimitMassActions;
+
+    public function __construct(EntryRepository $entryRepository, string $fetchingErrorMessage, string $apiLimitMassActions)
+    {
+        $this->entryRepository = $entryRepository;
+        $this->fetchingErrorMessage = $fetchingErrorMessage;
+        $this->apiLimitMassActions = $apiLimitMassActions;
+    }
+
     /**
      * Check if an entry exist by url.
      * Return ID if entry(ies) exist (and if you give the return_id parameter).
@@ -36,11 +55,21 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Get(
+     *  path="/api/entries/exists.{_format}",
+     *  name="api_get_entries_exists",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function getEntriesExistsAction(Request $request)
     {
         $this->validateAuthentication();
-        $repo = $this->getDoctrine()->getRepository('WallabagCoreBundle:Entry');
 
         $returnId = (null === $request->query->get('return_id')) ? false : (bool) $request->query->get('return_id');
 
@@ -69,7 +98,7 @@ class EntryRestController extends WallabagRestController
 
         $results = [];
         foreach ($hashedUrls as $hashedUrlToSearch) {
-            $res = $repo->findByHashedUrlAndUserId($hashedUrlToSearch, $this->getUser()->getId());
+            $res = $this->entryRepository->findByHashedUrlAndUserId($hashedUrlToSearch, $this->getUser()->getId());
 
             $results[$hashedUrlToSearch] = $this->returnExistInformation($res, $returnId);
         }
@@ -104,6 +133,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Get(
+     *  path="/api/entries.{_format}",
+     *  name="api_get_entries",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function getEntriesAction(Request $request)
     {
@@ -122,7 +162,7 @@ class EntryRestController extends WallabagRestController
 
         try {
             /** @var \Pagerfanta\Pagerfanta $pager */
-            $pager = $this->get('wallabag_core.entry_repository')->findEntries(
+            $pager = $this->entryRepository->findEntries(
                 $this->getUser()->getId(),
                 $isArchived,
                 $isStarred,
@@ -174,6 +214,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Get(
+     *  path="/api/entries/{entry}.{_format}",
+     *  name="api_get_entry",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function getEntryAction(Entry $entry)
     {
@@ -193,6 +244,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return Response
+     *
+     * @Get(
+     *  path="/api/entries/{entry}/export.{_format}",
+     *  name="api_get_entry_export",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="csv|epub|json|mobi|pdf|txt|xml"
+     *  }
+     * )
      */
     public function getEntryExportAction(Entry $entry, Request $request)
     {
@@ -216,6 +278,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Delete(
+     *  path="/api/entries/list.{_format}",
+     *  name="api_delete_entries_list",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function deleteEntriesListAction(Request $request)
     {
@@ -231,7 +304,7 @@ class EntryRestController extends WallabagRestController
 
         // handle multiple urls
         foreach ($urls as $key => $url) {
-            $entry = $this->get('wallabag_core.entry_repository')->findByUrlAndUserId(
+            $entry = $this->entryRepository->findByUrlAndUserId(
                 $url,
                 $this->getUser()->getId()
             );
@@ -265,6 +338,17 @@ class EntryRestController extends WallabagRestController
      * @throws HttpException When limit is reached
      *
      * @return JsonResponse
+     *
+     * @Post(
+     *  path="/api/entries/lists.{_format}",
+     *  name="api_post_entries_list",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function postEntriesListAction(Request $request)
     {
@@ -272,7 +356,7 @@ class EntryRestController extends WallabagRestController
 
         $urls = json_decode($request->query->get('urls', []));
 
-        $limit = $this->container->getParameter('wallabag_core.api_limit_mass_actions');
+        $limit = $this->apiLimitMassActions;
 
         if (\count($urls) > $limit) {
             throw new HttpException(400, 'API limit reached');
@@ -285,7 +369,7 @@ class EntryRestController extends WallabagRestController
 
         // handle multiple urls
         foreach ($urls as $key => $url) {
-            $entry = $this->get('wallabag_core.entry_repository')->findByUrlAndUserId(
+            $entry = $this->entryRepository->findByUrlAndUserId(
                 $url,
                 $this->getUser()->getId()
             );
@@ -335,6 +419,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Post(
+     *  path="/api/entries.{_format}",
+     *  name="api_post_entries",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function postEntriesAction(Request $request)
     {
@@ -342,7 +437,7 @@ class EntryRestController extends WallabagRestController
 
         $url = $request->request->get('url');
 
-        $entry = $this->get('wallabag_core.entry_repository')->findByUrlAndUserId(
+        $entry = $this->entryRepository->findByUrlAndUserId(
             $url,
             $this->getUser()->getId()
         );
@@ -441,6 +536,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Patch(
+     *  path="/api/entries/{entry}.{_format}",
+     *  name="api_patch_entries",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function patchEntriesAction(Entry $entry, Request $request)
     {
@@ -546,6 +652,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Patch(
+     *  path="/api/entries/{entry}/reload.{_format}",
+     *  name="api_patch_entries_reload",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function patchEntriesReloadAction(Entry $entry)
     {
@@ -564,7 +681,7 @@ class EntryRestController extends WallabagRestController
         }
 
         // if refreshing entry failed, don't save it
-        if ($this->container->getParameter('wallabag_core.fetching_error_message') === $entry->getContent()) {
+        if ($this->fetchingErrorMessage === $entry->getContent()) {
             return new JsonResponse([], 304);
         }
 
@@ -591,6 +708,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Delete(
+     *  path="/api/entries/{entry}.{_format}",
+     *  name="api_delete_entries",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function deleteEntriesAction(Entry $entry, Request $request)
     {
@@ -630,6 +758,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Get(
+     *  path="/api/entries/{entry}/tags.{_format}",
+     *  name="api_get_entries_tags",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function getEntriesTagsAction(Entry $entry)
     {
@@ -652,6 +791,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Post(
+     *  path="/api/entries/{entry}/tags.{_format}",
+     *  name="api_post_entries_tags",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function postEntriesTagsAction(Request $request, Entry $entry)
     {
@@ -681,6 +831,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Delete(
+     *  path="/api/entries/{entry}/tags/{tag}.{_format}",
+     *  name="api_delete_entries_tags",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function deleteEntriesTagsAction(Entry $entry, Tag $tag)
     {
@@ -705,6 +866,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Delete(
+     *  path="/api/entries/tags/list.{_format}",
+     *  name="api_delete_entries_tags_list",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function deleteEntriesTagsListAction(Request $request)
     {
@@ -720,7 +892,7 @@ class EntryRestController extends WallabagRestController
         $results = [];
 
         foreach ($list as $key => $element) {
-            $entry = $this->get('wallabag_core.entry_repository')->findByUrlAndUserId(
+            $entry = $this->entryRepository->findByUrlAndUserId(
                 $element->url,
                 $this->getUser()->getId()
             );
@@ -763,6 +935,17 @@ class EntryRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Post(
+     *  path="/api/entries/tags/lists.{_format}",
+     *  name="api_post_entries_tags_list",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function postEntriesTagsListAction(Request $request)
     {
@@ -778,7 +961,7 @@ class EntryRestController extends WallabagRestController
 
         // handle multiple urls
         foreach ($list as $key => $element) {
-            $entry = $this->get('wallabag_core.entry_repository')->findByUrlAndUserId(
+            $entry = $this->entryRepository->findByUrlAndUserId(
                 $element->url,
                 $this->getUser()->getId()
             );
@@ -798,6 +981,18 @@ class EntryRestController extends WallabagRestController
         }
 
         return $this->sendResponse($results);
+    }
+
+    public static function getSubscribedServices()
+    {
+        return array_merge(
+            parent::getSubscribedServices(),
+            [
+                'wallabag_core.content_proxy' => ContentProxy::class,
+                'wallabag_core.tags_assigner' => TagsAssigner::class,
+                'wallabag_core.helper.entries_export' => EntriesExport::class,
+            ]
+        );
     }
 
     /**

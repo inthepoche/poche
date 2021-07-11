@@ -40,7 +40,7 @@ twig:
     strict_variables: "%kernel.debug%"
     form_themes:
         - "LexikFormFilterBundle:Form:form_div_layout.html.twig"
-    exception_controller: wallabag_core.exception_controller:showAction
+    exception_controller: Wallabag\CoreBundle\Controller\ExceptionController:showAction
 
 # Doctrine Configuration
 doctrine:
@@ -110,14 +110,8 @@ fos_rest:
             pdf: true
             epub: true
             mobi: true
-        templating_formats:
-            html: false
-        force_redirects:
-            html: true
         failed_validation: HTTP_BAD_REQUEST
-        default_engine: twig
-    routing_loader:
-        default_format: json
+    routing_loader: false
     format_listener:
         enabled: true
         rules:
@@ -169,7 +163,7 @@ liip_theme:
     themes:
         - baggy
         - material
-    autodetect_theme: wallabag_core.helper.detect_active_theme
+    autodetect_theme: Wallabag\CoreBundle\Helper\DetectActiveTheme
 
     path_patterns:
         bundle_resource:
@@ -217,7 +211,7 @@ scheb_two_factor:
         sender_email: "%twofactor_sender%"
         digits: 6
         template: WallabagUserBundle:Authentication:form.html.twig
-        mailer: wallabag_user.auth_code_mailer
+        mailer: Wallabag\UserBundle\Mailer\AuthCodeMailer
 
 kphoen_rulerz:
     targets:
@@ -390,7 +384,7 @@ sensio_framework_extra:
 httplug:
     clients:
         wallabag_core:
-            factory: 'wallabag_core.http_client_factory'
+            factory: Wallabag\CoreBundle\Helper\HttpClientFactory
             config:
                 defaults:
                     timeout: 10

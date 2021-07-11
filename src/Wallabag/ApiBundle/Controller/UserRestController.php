@@ -2,6 +2,8 @@
 
 namespace Wallabag\ApiBundle\Controller;
 
+use FOS\RestBundle\Controller\Annotations\Get;
+use FOS\RestBundle\Controller\Annotations\Put;
 use FOS\UserBundle\Event\UserEvent;
 use FOS\UserBundle\FOSUserEvents;
 use JMS\Serializer\SerializationContext;
@@ -11,14 +13,32 @@ use Symfony\Component\HttpFoundation\Request;
 use Wallabag\ApiBundle\Entity\Client;
 use Wallabag\UserBundle\Entity\User;
 
-class UserRestController extends WallabagRestController
+class UserRestController extends AbstractWallabagRestController
 {
+    private $fosUserRegistration;
+
+    public function __construct(bool $fosUserRegistration)
+    {
+        $this->fosUserRegistration = $fosUserRegistration;
+    }
+
     /**
      * Retrieve current logged in user informations.
      *
      * @ApiDoc()
      *
      * @return JsonResponse
+     *
+     * @Get(
+     *  path="/api/user.{_format}",
+     *  name="api_get_user",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function getUserAction()
     {
@@ -42,10 +62,21 @@ class UserRestController extends WallabagRestController
      * @todo Make this method (or the whole API) accessible only through https
      *
      * @return JsonResponse
+     *
+     * @Put(
+     *  path="/api/user.{_format}",
+     *  name="api_put_user",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function putUserAction(Request $request)
     {
-        if (!$this->container->getParameter('fosuser_registration') || !$this->get('craue_config')->get('api_user_registration')) {
+        if (!$this->fosUserRegistration || !$this->get('craue_config')->get('api_user_registration')) {
             $json = $this->get('jms_serializer')->serialize(['error' => "Server doesn't allow registrations"], 'json');
 
             return (new JsonResponse())

@@ -2,27 +2,47 @@
 
 namespace Wallabag\ApiBundle\Controller;
 
+use FOS\RestBundle\Controller\Annotations\Delete;
+use FOS\RestBundle\Controller\Annotations\Get;
 use Nelmio\ApiDocBundle\Annotation\ApiDoc;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Wallabag\CoreBundle\Entity\Entry;
 use Wallabag\CoreBundle\Entity\Tag;
+use Wallabag\CoreBundle\Repository\EntryRepository;
+use Wallabag\CoreBundle\Repository\TagRepository;
 
-class TagRestController extends WallabagRestController
+class TagRestController extends AbstractWallabagRestController
 {
+    private $tagRepository;
+
+    public function __construct(TagRepository $tagRepository)
+    {
+        $this->tagRepository = $tagRepository;
+    }
+
     /**
      * Retrieve all tags.
      *
      * @ApiDoc()
      *
      * @return JsonResponse
+     *
+     * @Get(
+     *  path="/api/tags.{_format}",
+     *  name="api_get_tags",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function getTagsAction()
     {
         $this->validateAuthentication();
 
-        $tags = $this->getDoctrine()
-            ->getRepository('WallabagCoreBundle:Tag')
+        $tags = $this->tagRepository
             ->findAllTags($this->getUser()->getId());
 
         $json = $this->get('jms_serializer')->serialize($tags, 'json');
@@ -40,13 +60,24 @@ class TagRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Delete(
+     *  path="/api/tag/label.{_format}",
+     *  name="api_delete_tag_label",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function deleteTagLabelAction(Request $request)
     {
         $this->validateAuthentication();
         $label = $request->get('tag', '');
 
-        $tags = $this->getDoctrine()->getRepository('WallabagCoreBundle:Tag')->findByLabelsAndUser([$label], $this->getUser()->getId());
+        $tags = $this->tagRepository->findByLabelsAndUser([$label], $this->getUser()->getId());
 
         if (empty($tags)) {
             throw $this->createNotFoundException('Tag not found');
@@ -54,8 +85,7 @@ class TagRestController extends WallabagRestController
 
         $tag = $tags[0];
 
-        $this->getDoctrine()
-            ->getRepository('WallabagCoreBundle:Entry')
+        $this->get('wallabag_core.entry_repository')
             ->removeTag($this->getUser()->getId(), $tag);
 
         $this->cleanOrphanTag($tag);
@@ -75,6 +105,17 @@ class TagRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Delete(
+     *  path="/api/tags/label.{_format}",
+     *  name="api_delete_tags_label",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function deleteTagsLabelAction(Request $request)
     {
@@ -82,14 +123,13 @@ class TagRestController extends WallabagRestController
 
         $tagsLabels = $request->get('tags', '');
 
-        $tags = $this->getDoctrine()->getRepository('WallabagCoreBundle:Tag')->findByLabelsAndUser(explode(',', $tagsLabels), $this->getUser()->getId());
+        $tags = $this->tagRepository->findByLabelsAndUser(explode(',', $tagsLabels), $this->getUser()->getId());
 
         if (empty($tags)) {
             throw $this->createNotFoundException('Tags not found');
         }
 
-        $this->getDoctrine()
-            ->getRepository('WallabagCoreBundle:Entry')
+        $this->get('wallabag_core.entry_repository')
             ->removeTags($this->getUser()->getId(), $tags);
 
         $this->cleanOrphanTag($tags);
@@ -109,19 +149,29 @@ class TagRestController extends WallabagRestController
      * )
      *
      * @return JsonResponse
+     *
+     * @Delete(
+     *  path="/api/tags/{tag}.{_format}",
+     *  name="api_delete_tag",
+     *  defaults={
+     *      "_format"="json"
+     *  },
+     *  requirements={
+     *      "_format"="json"
+     *  }
+     * )
      */
     public function deleteTagAction(Tag $tag)
     {
         $this->validateAuthentication();
 
-        $tagFromDb = $this->getDoctrine()->getRepository('WallabagCoreBundle:Tag')->findByLabelsAndUser([$tag->getLabel()], $this->getUser()->getId());
+        $tagFromDb = $this->tagRepository->findByLabelsAndUser([$tag->getLabel()], $this->getUser()->getId());
 
         if (empty($tagFromDb)) {
             throw $this->createNotFoundException('Tag not found');
         }
 
-        $this->getDoctrine()
-            ->getRepository('WallabagCoreBundle:Entry')
+        $this->get('wallabag_core.entry_repository')
             ->removeTag($this->getUser()->getId(), $tag);
 
         $this->cleanOrphanTag($tag);
@@ -129,6 +179,16 @@ class TagRestController extends WallabagRestController
         $json = $this->get('jms_serializer')->serialize($tag, 'json');
 
         return (new JsonResponse())->setJson($json);
+    }
+
+    public static function getSubscribedServices()
+    {
+        return array_merge(
+            parent::getSubscribedServices(),
+            [
+                'wallabag_core.entry_repository' => EntryRepository::class,
+            ]
+        );
     }
 
     /**
