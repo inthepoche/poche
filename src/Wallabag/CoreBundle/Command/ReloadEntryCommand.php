@@ -9,9 +9,19 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Wallabag\CoreBundle\Event\EntrySavedEvent;
+use Wallabag\UserBundle\Repository\UserRepository;
 
 class ReloadEntryCommand extends Command
 {
+    private $userRepository;
+
+    public function __construct(UserRepository $userRepository)
+    {
+        $this->userRepository = $userRepository;
+
+        parent::__construct();
+    }
+
     protected function configure()
     {
         $this
@@ -29,8 +39,7 @@ class ReloadEntryCommand extends Command
         $userId = null;
         if ($username = $input->getArgument('username')) {
             try {
-                $userId = $this->getContainer()
-                    ->get('wallabag_user.user_repository')
+                $userId = $this->userRepository
                     ->findOneByUserName($username)
                     ->getId();
             } catch (NoResultException $e) {
@@ -40,8 +49,7 @@ class ReloadEntryCommand extends Command
             }
         }
 
-        $entryRepository = $this->getContainer()->get('wallabag_core.entry_repository');
-        $entryIds = $entryRepository->findAllEntriesIdByUserId($userId);
+        $entryIds = $this->entryRepository->findAllEntriesIdByUserId($userId);
 
         $nbEntries = \count($entryIds);
         if (!$nbEntries) {
@@ -69,7 +77,7 @@ class ReloadEntryCommand extends Command
 
         $progressBar->start();
         foreach ($entryIds as $entryId) {
-            $entry = $entryRepository->find($entryId);
+            $entry = $this->entryRepository->find($entryId);
 
             $contentProxy->updateEntry($entry, $entry->getUrl());
             $em->persist($entry);
